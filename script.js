@@ -14,9 +14,8 @@ async function processVideo() {
 
     resultDiv.innerText = 'Processing video...';
 
-    // Load the Hugging Face model (assuming an image classification model is available)
-    const model = await transformers.loadModel('google/vit-base-patch16-224');
-    const processor = await transformers.loadProcessor('google/vit-base-patch16-224');
+    // Load the Hugging Face model
+    const model = await transformers.loadModel('https://huggingface.co/google/vit-base-patch16-224');
 
     // Extract frames from the video
     const frames = await extractFrames(videoElement);
@@ -27,14 +26,14 @@ async function processVideo() {
         image.src = frame;
         await new Promise((resolve) => (image.onload = resolve));
 
-        const tensor = processor.process(image);
-        const output = await model.predict(tensor);
+        const tensor = tf.browser.fromPixels(image).resizeBilinear([224, 224]).expandDims(0).toFloat().div(tf.scalar(255));
+        const output = await model.predict(tensor).array();
 
         console.log(output);  // Output for debugging purposes
 
         // Process the output as needed (example below)
-        const labels = output.map(result => result.label);
-        if (labels.includes('runner_out')) {
+        // Assuming 'runner_out' is one of the possible labels
+        if (output[0][0] > 0.5) {  // Replace with the actual condition
             resultDiv.innerText = 'The runner is out';
             return;
         }
